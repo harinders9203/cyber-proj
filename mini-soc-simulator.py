@@ -3,17 +3,12 @@ import time
 import os
 from collections import Counter
 
-# -------------------------------
 # GLOBAL DATA
-# -------------------------------
-
 alerts = []
 open_ports = []
 packet_count = Counter()
 
-# -------------------------------
 # PORT SCANNER
-# -------------------------------
 
 def scan_ports(host, start_port, end_port):
 
@@ -41,10 +36,8 @@ def scan_ports(host, start_port, end_port):
 
         s.close()
 
-
-# -------------------------------
 # NETWORK MONITOR
-# -------------------------------
+
 
 def monitor_network(seconds=10):
 
@@ -78,10 +71,8 @@ def monitor_network(seconds=10):
 
         print("Raw socket requires Administrator/Root privileges.")
 
-
-# -------------------------------
 # SNORT LOG ANALYZER
-# -------------------------------
+
 
 def analyze_logs(file_name="alerts.log"):
 
@@ -114,9 +105,7 @@ def analyze_logs(file_name="alerts.log"):
     print("Alerts Loaded:", len(alerts))
 
 
-# -------------------------------
 # INCIDENT DASHBOARD
-# -------------------------------
 
 def dashboard():
 
@@ -149,9 +138,7 @@ def dashboard():
     print("=" * 55)
 
 
-# -------------------------------
 # REPORT
-# -------------------------------
 
 def generate_report():
 
@@ -176,9 +163,7 @@ def generate_report():
     print("\nReport Generated: Security_Report.txt")
 
 
-# -------------------------------
 # MENU
-# -------------------------------
 
 def menu():
 
@@ -229,11 +214,5 @@ def menu():
 
         else:
             print("Invalid Choice")
-
-
-# -------------------------------
-# MAIN
-# -------------------------------
-
 if __name__ == "__main__":
     menu()
