@@ -1,17 +1,23 @@
-CYBER SECURITY TOOLKIT REPORT
-=============================
-Generated: 2026-07-13 09:50:20
+MINI SOC REPORT
+==================================================
 
-Captured Packets Summary
-------------------------
-Stored Packets: 1
+Open Ports
 
-Packet 1
-  Timestamp        : 2026-07-13 10:00:00
-  Source IP        : 192.168.1.10
-  Destination IP   : 8.8.8.8
-  Protocol         : UDP
-  Source Port      : 5353
-  Destination Port : 53
-  Packet Size      : 128 bytes
+Detected Alerts
+Medium : Port Scan
+Low : Unknown Event
+High : SQL Injection Attempt
+Low : Unknown Event
+High : Brute Force
+Low : Unknown Event
+Medium : SSH Activity
+Low : Unknown Event
 
+Packets Captured
+5
+
+Connection Samples
+2
+
+Peak Active Connections
+2
