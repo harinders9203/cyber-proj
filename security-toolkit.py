@@ -2,6 +2,10 @@ import socket
 import hashlib
 import os
 import re
+from datetime import datetime
+
+captured_packets = []
+MAX_STORED_PACKETS = 500
 
 # PORT SCANNER
 
@@ -120,58 +124,135 @@ def metadata_analyzer():
     print("Created  :", os.path.getctime(path))
     print("Modified :", os.path.getmtime(path))
 
-# PACKET SNIFFER (PLACEHOLDER)
+# PACKET SNIFFER
 
-from scapy.all import sniff
+try:
+    from scapy.all import sniff, conf
+except ImportError:
+    sniff = None
+    conf = None
+
+def summarize_packet(packet):
+
+    summary = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "src_ip": "N/A",
+        "dst_ip": "N/A",
+        "protocol": "Other",
+        "src_port": "N/A",
+        "dst_port": "N/A",
+        "size": len(packet),
+    }
+
+    if packet.haslayer("IP"):
+        summary["src_ip"] = packet["IP"].src
+        summary["dst_ip"] = packet["IP"].dst
+
+    if packet.haslayer("TCP"):
+        summary["protocol"] = "TCP"
+        summary["src_port"] = packet["TCP"].sport
+        summary["dst_port"] = packet["TCP"].dport
+
+    elif packet.haslayer("UDP"):
+        summary["protocol"] = "UDP"
+        summary["src_port"] = packet["UDP"].sport
+        summary["dst_port"] = packet["UDP"].dport
+
+    elif packet.haslayer("ICMP"):
+        summary["protocol"] = "ICMP"
+
+    return summary
 
 def packet_callback(packet):
 
+    summary = summarize_packet(packet)
+
+    if len(captured_packets) >= MAX_STORED_PACKETS:
+        captured_packets.pop(0)
+
+    captured_packets.append(summary)
+
     print("\n" + "=" * 50)
 
-    if packet.haslayer("IP"):
+    print("Timestamp      :", summary["timestamp"])
+    print("Source IP      :", summary["src_ip"])
+    print("Destination IP :", summary["dst_ip"])
+    print("Protocol Name  :", summary["protocol"])
+    print("Source Port    :", summary["src_port"])
+    print("Destination Port:", summary["dst_port"])
+    print("Packet Size    :", summary["size"], "bytes")
 
-        print("Source IP      :", packet["IP"].src)
-        print("Destination IP :", packet["IP"].dst)
-        print("Protocol       :", packet["IP"].proto)
+def start_sniffing():
 
-    if packet.haslayer("TCP"):
-        print("Protocol Name  : TCP")
-        print("Source Port    :", packet["TCP"].sport)
-        print("Destination Port:", packet["TCP"].dport)
+    try:
+        sniff(prn=packet_callback, store=False)
+    except Exception as error:
+        error_message = str(error).lower()
+        needs_l3_fallback = (
+            conf is not None and
+            (
+                "layer 2" in error_message or
+                "winpcap" in error_message or
+                "npcap" in error_message
+            )
+        )
 
-    elif packet.haslayer("UDP"):
-        print("Protocol Name  : UDP")
-        print("Source Port    :", packet["UDP"].sport)
-        print("Destination Port:", packet["UDP"].dport)
+        if not needs_l3_fallback:
+            raise
 
-    elif packet.haslayer("ICMP"):
-        print("Protocol Name  : ICMP")
-
-    print("Packet Size    :", len(packet), "bytes")
+        print("Layer 2 capture is unavailable. Falling back to Scapy's layer 3 socket...\n")
+        sniff(prn=packet_callback, store=False, opened_socket=conf.L3socket())
 
 
 def packet_sniffer():
 
     print("\nStarting Packet Sniffer...")
     print("Press Ctrl + C to stop.\n")
-    from scapy.all import sniff, conf
 
-    sniff(
-        prn=packet_callback,
-        store=False,
-        opened_socket=conf.L3socket()
-    )
+    if sniff is None:
+        print("Scapy is not installed. Install it with: pip install scapy")
+        return
+
+    previous_count = len(captured_packets)
+
+    try:
+        start_sniffing()
+    except KeyboardInterrupt:
+        new_packets = len(captured_packets) - previous_count
+        print(f"\nPacket capture stopped. Stored {new_packets} packet summaries.")
+    except Exception as error:
+        print(f"Packet sniffer error: {error}")
+        print("If you want full packet capture on Windows, install Npcap from https://npcap.com/")
 
 
 # PDF REPORT (TEXT REPORT)
 def generate_report():
 
-    with open("Security_Report.txt", "w") as file:
+    report_path = "Security_Report.txt"
+
+    with open(report_path, "w", encoding="utf-8") as file:
         file.write("CYBER SECURITY TOOLKIT REPORT\n")
         file.write("=============================\n")
-        file.write("Report Generated Successfully.\n")
+        file.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
 
-    print("Report Saved as Security_Report.txt")
+        file.write("Captured Packets Summary\n")
+        file.write("------------------------\n")
+        file.write(f"Stored Packets: {len(captured_packets)}\n\n")
+
+        if not captured_packets:
+            file.write("No packets have been captured yet.\n")
+        else:
+            for index, packet in enumerate(captured_packets, start=1):
+                file.write(f"Packet {index}\n")
+                file.write(f"  Timestamp        : {packet['timestamp']}\n")
+                file.write(f"  Source IP        : {packet['src_ip']}\n")
+                file.write(f"  Destination IP   : {packet['dst_ip']}\n")
+                file.write(f"  Protocol         : {packet['protocol']}\n")
+                file.write(f"  Source Port      : {packet['src_port']}\n")
+                file.write(f"  Destination Port : {packet['dst_port']}\n")
+                file.write(f"  Packet Size      : {packet['size']} bytes\n\n")
+
+    print(f"Report Saved as {report_path}")
 
 # MENU
 def menu():
@@ -225,4 +306,5 @@ def menu():
 
 
 # MAIN
-menu()
+if __name__ == "__main__":
+    menu()
